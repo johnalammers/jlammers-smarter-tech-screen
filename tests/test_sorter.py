@@ -1,8 +1,6 @@
 import pytest
 
-import sorter
-from sorter import sort
-from sorter import PackageStack
+from sorter import sort, PackageStack, BULKY_DIMENSION, HEAVY_MASS
 
 # Test Notes
 #
@@ -25,8 +23,8 @@ from sorter import PackageStack
 # values.
 
 SAFE_DIMENSION = 10  # Cannot produce a volume violation without a dimension violation in another parameter
-INSIDE_BULKY_DIMENSION_EDGE = sorter.BULKY_DIMENSION - 0.1
-INSIDE_HEAVY_EDGE = sorter.HEAVY_MASS - 0.1
+INSIDE_BULKY_DIMENSION_EDGE = BULKY_DIMENSION - 0.1
+INSIDE_HEAVY_EDGE = HEAVY_MASS - 0.1
 
 
 def test_if_neither_bulky_nor_heavy_put_on_normal_stack_happy_path():
@@ -35,9 +33,9 @@ def test_if_neither_bulky_nor_heavy_put_on_normal_stack_happy_path():
 
 
 @pytest.mark.parametrize("width, height, length", [
-    pytest.param(INSIDE_BULKY_DIMENSION_EDGE, SAFE_DIMENSION, SAFE_DIMENSION, id="Width edge test"),
-    pytest.param(SAFE_DIMENSION, INSIDE_BULKY_DIMENSION_EDGE, SAFE_DIMENSION, id="Height edge test"),
-    pytest.param(SAFE_DIMENSION, SAFE_DIMENSION, INSIDE_BULKY_DIMENSION_EDGE, id="Length edge test"),
+    pytest.param(INSIDE_BULKY_DIMENSION_EDGE, SAFE_DIMENSION, SAFE_DIMENSION, id="width_edge"),
+    pytest.param(SAFE_DIMENSION, INSIDE_BULKY_DIMENSION_EDGE, SAFE_DIMENSION, id="height_edge"),
+    pytest.param(SAFE_DIMENSION, SAFE_DIMENSION, INSIDE_BULKY_DIMENSION_EDGE, id="length_edge"),
 ])
 def test_if_neither_bulky_nor_heavy_put_on_normal_stack_edge_cases(width: float, height: float, length: float):
     stack = sort(width, height, length, INSIDE_HEAVY_EDGE)
@@ -45,9 +43,9 @@ def test_if_neither_bulky_nor_heavy_put_on_normal_stack_edge_cases(width: float,
 
 
 @pytest.mark.parametrize("width, height, length", [
-    pytest.param(sorter.BULKY_DIMENSION, SAFE_DIMENSION, SAFE_DIMENSION, id="Too wide"),
-    pytest.param(SAFE_DIMENSION, sorter.BULKY_DIMENSION, SAFE_DIMENSION, id="Too high"),
-    pytest.param(SAFE_DIMENSION, SAFE_DIMENSION, sorter.BULKY_DIMENSION, id="Too long")
+    pytest.param(BULKY_DIMENSION, SAFE_DIMENSION, SAFE_DIMENSION, id="wide"),
+    pytest.param(SAFE_DIMENSION, BULKY_DIMENSION, SAFE_DIMENSION, id="high"),
+    pytest.param(SAFE_DIMENSION, SAFE_DIMENSION, BULKY_DIMENSION, id="long")
 ])
 def test_if_bulky_by_dimension_but_not_heavy_put_on_special_stack(width: float, height: float, length: float):
     stack = sort(width, height, length, INSIDE_HEAVY_EDGE)
@@ -60,13 +58,28 @@ def test_if_bulky_by_volume_but_not_heavy_put_on_special_stack():
 
 
 def test_if_heavy_put_on_special_stack():
-    stack = sort(SAFE_DIMENSION, SAFE_DIMENSION, SAFE_DIMENSION, sorter.HEAVY_MASS)
+    stack = sort(SAFE_DIMENSION, SAFE_DIMENSION, SAFE_DIMENSION, HEAVY_MASS)
     assert stack == PackageStack.SPECIAL.value
+
+
+def test_if_bulky_by_volume_and_heavy_put_on_rejected_stack():
+    stack = sort(100, 100, 100, HEAVY_MASS)
+    assert stack == PackageStack.REJECTED.value
+
+
+@pytest.mark.parametrize("width, height, length, mass", [
+    pytest.param(BULKY_DIMENSION, SAFE_DIMENSION, SAFE_DIMENSION, HEAVY_MASS, id="wide_and_heavy"),
+    pytest.param(SAFE_DIMENSION, BULKY_DIMENSION, SAFE_DIMENSION, HEAVY_MASS, id="high_and_heavy"),
+    pytest.param(SAFE_DIMENSION, SAFE_DIMENSION, BULKY_DIMENSION, HEAVY_MASS, id="long_and_heavy")
+])
+def test_if_bulky_by_dimensions_and_heavy_put_on_rejected_stack(width: float, height: float, length: float, mass: float):
+    stack = sort(width, height, length, mass)
+    assert stack == PackageStack.REJECTED.value
 
 
 # Invalid dimensions or mass
 # This wasn't in the spec, because it should be impossible, but
-# we should account for it anyway. Hardware malfunctions of bugs
+# we should account for it anyway. Hardware malfunctions or bugs
 # in the calling software could result in nonsensical values.
 @pytest.mark.parametrize("width, height, length, mass", [
     (0, 1, 1, 1),
@@ -78,7 +91,6 @@ def test_if_heavy_put_on_special_stack():
     (1, 1, -1, 1),
     (1, 1, 1, -1),
 ])
-def test_invalid_dimension_or_mass_put_on_rejected_stack(width: float, height: float, length: float, mass: float):
+def test_invalid_dimension_or_mass_raises_value_error(width: float, height: float, length: float, mass: float):
     with pytest.raises(ValueError):
         sort(width, height, length, mass)
-
