@@ -1,6 +1,6 @@
 # John Lammers Tech Screen for Smarter
 
-GitHub repo: https://github.com/johnalammers-realityforge/jlammers-smarter-tech-screen
+GitHub repo: https://github.com/johnalammers/jlammers-smarter-tech-screen
 
 ## Environment and Technology Choices
 Developed with Python 3.12.
@@ -9,7 +9,7 @@ The commands that follow presume python is in your system path.
 
 ## Setup
 From the command line, in the project root directory,run:
-`pip install pytest`
+`pip install -U pytest`
 
 ## Run Tests
 From the command line, in the project root directory, run: 
@@ -20,6 +20,7 @@ From the command line, in the project root directory, run:
 ```python
 from sorter import sort
 
+# Volume = 1,000,000 cm³ (bulky threshold)
 stack = sort(100, 100, 100, 10)
 print(stack)  # SPECIAL
 ```
